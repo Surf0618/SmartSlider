@@ -1,50 +1,62 @@
-void runMotor(int enablePin, int ln1Pin, int ln2Pin, boolean foward, boolean on);
- int enablePin = 9;
- int ln1Pin = 6;
- int ln2Pin = 3;
-  
+
+#include <CurieBLE.h>
+#include <Servo.h> 
+
+int servoPin = 9;
+Servo runServo; 
+
+BLEPeripheral blePer; 
+BLEService motorTrigger("19B10000-E8F2-537E-4F6C-D104768A1214");
+
+BLECharCharacteristic motorCom("19B10000-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); 
+
 void setup() 
 {
-  // put your setup code here, to run once:
+  runServo.attach(servoPin); 
+   
+  blePer.setLocalName("SmartSlider");
+  blePer.setAdvertisedServiceUuid(motorTrigger.uuid()); 
 
-  pinMode(enablePin, OUTPUT);
-  pinMode(ln1Pin, OUTPUT);
-  pinMode(ln2Pin, OUTPUT);
-  
+  blePer.addAttribute(motorTrigger);
+  blePer.addAttribute(motorCom);  
+
+  motorCom.setValue(0); 
+
+  blePer.begin(); 
 }
 
 void loop() 
 {
-  // put your main code here, to run repeatedly:
-  runMotor(enablePin, ln1Pin, ln2Pin, true, true);  
-  delay(2000);
-  runMotor(enablePin, ln1Pin, ln2Pin, false, true);  
-  delay(2000);
+  BLECentral central = blePer.central(); 
+  
+  while(central.connected())
+  {
+    if(motorCom.written())
+    {
+      if(motorCom.value() == 1)
+      {
+        runMotor(&runServo, true);  
+      } 
+      if(motorCom.value() == 2)
+      {
+       runMotor(&runServo, false);
+      } 
+    }
+  }
+  
+
 
 }
 
-void runMotor(int enablePin, int ln1Pin, int ln2Pin, boolean foward, boolean on)
+void runMotor(Servo *runServo, boolean down)
 { 
-  if( on == true)
+  if(down)
   {
-    digitalWrite(enablePin, HIGH);
-        if( foward == true)
-        {
-            digitalWrite(ln1Pin, LOW);
-            digitalWrite(ln2Pin, HIGH);
-        }
-        else
-        {
-             digitalWrite(ln1Pin, HIGH);
-             digitalWrite(ln2Pin, LOW);
-        }
+    runServo -> write(10); 
   }
   else
   {
-    digitalWrite(enablePin, LOW);
-    digitalWrite(ln1Pin, LOW);
-    digitalWrite(ln2Pin, LOW);
+    runServo -> write(170);
   }
-    
 }
 
